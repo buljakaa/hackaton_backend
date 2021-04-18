@@ -2,9 +2,10 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const logger = require('morgan');
-
+const db = require('./db');
+db.databaseInit();
 const http = require('http');
-
+const User =require("./model/user");
 const hostname = '127.0.0.1';
 const port = 3000;
 app.use(logger('dev'));
@@ -16,8 +17,10 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/', function (req, res) {
-  res.send('Hello World!')
+app.get('/', async(req, res) => {
+  const data = await User.find();
+  console.log(data);
+  res.status(200).json(data);
 })
 
 module.exports=app;
