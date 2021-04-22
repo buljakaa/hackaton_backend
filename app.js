@@ -3,9 +3,11 @@ const app = express();
 const cors = require('cors');
 const logger = require('morgan');
 const db = require('./db');
+
 db.databaseInit();
 const http = require('http');
 const User =require("./model/user");
+const users =require("./routes/user");
 const hostname = '127.0.0.1';
 const port = 3000;
 app.use(logger('dev'));
@@ -16,6 +18,8 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
+
+app.use("/users",users);
 
 app.get('/', async(req, res) => {
   const data = await User.find();
