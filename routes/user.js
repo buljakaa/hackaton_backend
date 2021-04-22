@@ -1,6 +1,6 @@
 const express = require('express');
-//const bcrypt = require('bcryptjs');
-//const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 
 // define express router
@@ -8,19 +8,23 @@ const router = express.Router();
 
 // importing user model
 const User = require('../model/user');
-// {"firstName":"marko",
-// "lastName":"pop",
-// "email":"taakoje@gmaiil.com",
-// "username":"popara",
-// "password":"macak",
+// {
+// "firstName":"marko1",
+// "lastName":"pop1",
+// "email":"taakoje@gmaiil.com1",
+// "username":"popara1",
+// "password":"macak1",
 // "phone":"06521231",
 // "role":"glavni ali zamalo",
-// "verified":true,
-// "verificationToken":true,
-// "token":"123",
 // "gender":"M"
 // }
-router.post('/register', (req, res) => {
+
+// {
+// "email":"taakoje@gmaiil.com1",
+// "password":"macak1"
+// }
+
+router.post('/register',async (req, res) => {
 //console.log(req.body);  
    // res.status(201).json({message: 'User created', obj: "aa"}); 
     //const data = await User.find();
@@ -31,7 +35,7 @@ router.post('/register', (req, res) => {
         lastName: req.body.lastName,
         email: req.body.email,
         username: req.body.username,
-        password: req.body.password,
+        password:await bcrypt.hash(req.body.password, 10),
         phone: req.body.phone,
         role: req.body.role,
         verified: req.body.verified,
@@ -49,4 +53,9 @@ router.post('/register', (req, res) => {
        
     });
 });
+
+
+
+
 module.exports = router;
+ 
