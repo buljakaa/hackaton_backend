@@ -2,15 +2,12 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require("nodemailer");
-const crypto = require('crypto');
 require('dotenv').config();
 
 const router = express.Router();
-
 const User = require('../model/user');
 
 router.post('/register',async (req, res) => {
-
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -22,46 +19,47 @@ router.post('/register',async (req, res) => {
         gender: req.body.gender,
     }); 
 
+    console.log(user);
         const verificationToken = crypto.createHash('sha256')
             .update(user.username)
             .digest('hex');
     user.verificationToken=verificationToken;
-    user.save(async(err, result) => {
+    user.save((err, result) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
         await this.sendEmail(user);
-
         res.status(201).json({message: 'User created', obj: user});
     });
 });
 
+
 exports.sendEmail = async(user) => {
-    console.log("Username");
-    console.log(process.env.MAIL_USERNAME);
-    console.log("Username");
-    console.log("Password");
-    console.log(process.env.MAIL_PASSWORD);
-    console.log("Passsword");
+
+    console.log(user.email);
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
+        //    user: process.env.MAIL_USERNAME,
+        //   pass: process.env.MAIL_PASSWORD
         user: "markopriboj@gmail.com",
         pass: "rtgaiuisufjwcoga"
         }
       });
-      let mailOptions = {
+    const userLink="localhost:3000/users/verify?verificationToken="+user.verificationToken;
+      const info = await transporter.sendMail({
         from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
-        to: user.email,
-        subject: 'Welcome to Hackaton!',
-        html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
-      };
-
-   transporter.sendMail(mailOptions, (error, info) => {
+        to: user.email, // list of receivers
+        subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
+        text: 'Aktiviraj nalog, link: ' + userLink, // plain text body
+        html: html,
+    });
+   
+     transporter.sendMail(mailOptions, (error, info) => {
        if (error) console.log(error);
        else console.log('Email sent: ' + info.response);
      });
 }
 
-router.get('/verify',async (req, res) => {
+router.get('/verify', (req, res) => {
 
     if (!req.params.verificationToken) {
         res.sendStatus(401);
@@ -70,12 +68,17 @@ router.get('/verify',async (req, res) => {
     const verificationToken = req.query.verificationToken;
     try {
         const user =   await User.findOne      ({'verificationToken': verificationToken});
+        
         const hostLink = 'http://localhost:5000/auth/email-confirm';
         const errorLink = 'http://localhost:5000/auth/login';
         if (user) {
-            res.status(201).json({message: 'User created'});
+            
+            user.verified = true;
+            user.verificationToken = '';
+            await User.updateOneMethod({'_id': user._id}, user, {$unset: {verificationToken: ''}});
+            res.redirect(hostLink);
         } else {
-            res.status(201).json({message: 'User neeeeee'});
+            res.redirect(errorLink);
         }
     } catch (e) {
         console.log(e);
@@ -88,16 +91,19 @@ router.post('/login', (req, res) => {
     
     User.findOne({email: req.body.email}, (err, user) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-  
+        //no user with provided email address
         if (!user) return res.status(401).json({
             title: 'Login failed',
             error: {message: 'Invalid email and/or password!'}
         });
-    
+        console.log(user.password);
+        //passwords does not maches
         if (!bcrypt.compare(req.body.password, user.password)) return res.status(401).json({
             title: 'Login failed', 
             error: {message: 'Invalid email and/or password!'}
         });
+        //user.token=token;
+        //login is success, create token for that u ser
         const token = jwt.sign({user: user}, 'secret', {expiresIn: 10800});
         user.token=token;
         user.save();
