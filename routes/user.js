@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require("nodemailer");
+const crypto = require('crypto');
 require('dotenv').config();
 // define express router
 const router = express.Router();
@@ -41,17 +42,14 @@ router.post('/register',async (req, res) => {
         gender: req.body.gender,
     }); 
 //await dodaj, provera gore da li postoji 
-    console.log(user);
+
 
         const verificationToken = crypto.createHash('sha256')
             .update(user.username)
             .digest('hex');
     user.verificationToken=verificationToken;
-    user.save((err, result) => {
+    user.save(async(err, result) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-
-      
-
 
         await this.sendEmail(user);
         //vrati id, i token ne celog usera
@@ -62,37 +60,44 @@ router.post('/register',async (req, res) => {
 
 exports.sendEmail = async(user) => {
 //function sendEmail (user) {
-    console.log(user.email);
+    console.log("Username");
+    console.log(process.env.MAIL_USERNAME);
+    console.log("Username");
+    console.log("Password");
+    console.log(process.env.MAIL_PASSWORD);
+    console.log("Passsword");
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: process.env.MAIL_USERNAME,
-          pass: process.env.MAIL_PASSWORD
+        //   user: process.env.MAIL_USERNAME,
+        //   pass: process.env.MAIL_PASSWORD
+        user: "markopriboj@gmail.com",
+        pass: "rtgaiuisufjwcoga"
         }
       });
-    //   let mailOptions = {
-    //     from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
-    //     to: user.email,
-    //     subject: 'Welcome to Hackaton!',
-    //     html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
-    //   };
-    //  proccess.env.MAIL_USERNAME = markopriboj@gmail.com
-    const userLink="localhost:3000/users/verify?verificationToken="+user.verificationToken;
-      const info = await transporter.sendMail({
+      let mailOptions = {
         from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
-        to: user.email, // list of receivers
-        subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
-        text: 'Aktiviraj nalog, link: ' + userLink, // plain text body
-        html: html, // html body
-    });
-   
-     transporter.sendMail(mailOptions, (error, info) => {
+        to: user.email,
+        subject: 'Welcome to Hackaton!',
+        html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
+      };
+    // proccess.env.MAIL_USERNAME = markopriboj@gmail.com
+
+   transporter.sendMail(mailOptions, (error, info) => {
        if (error) console.log(error);
        else console.log('Email sent: ' + info.response);
      });
+
+    // const userLink="localhost:3000/users/verify?verificationToken="+user.verificationToken;
+    //   const info = await transporter.sendMail({ 
+    //     from:  '"HACKATHON" <' + process.env.MAIL_USERNAME + '>',
+    //     to: user.email, // list of receivers
+    //     subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
+    //     text: 'Aktiviraj nalog, link: ' + userLink, // plain text body
+    // });
 }
 
-router.get('/verify', (req, res) => {
+router.get('/verify',async (req, res) => {
 
     if (!req.params.verificationToken) {
         res.sendStatus(401);
@@ -105,13 +110,14 @@ router.get('/verify', (req, res) => {
         const hostLink = 'http://localhost:5000/auth/email-confirm';
         const errorLink = 'http://localhost:5000/auth/login';
         if (user) {
-            
-            user.verified = true;
-            user.verificationToken = '';
-            await User.updateOneMethod({'_id': user._id}, user, {$unset: {verificationToken: ''}});
-            res.redirect(hostLink);
+            res.status(201).json({message: 'User created'});
+            // user.verified = true;
+            // user.verificationToken = '';
+            // await User.updateOneMethod({'_id': user._id}, user, {$unset: {verificationToken: ''}});
+            // res.redirect(hostLink);
         } else {
-            res.redirect(errorLink);
+            res.status(201).json({message: 'User neeeeee'});
+            //res.redirect(errorLink);
         }
     } catch (e) {
         console.log(e);
@@ -129,7 +135,7 @@ router.post('/login', (req, res) => {
             title: 'Login failed',
             error: {message: 'Invalid email and/or password!'}
         });
-        console.log(user.password);
+    
         //passwords does not maches
         if (!bcrypt.compare(req.body.password, user.password)) return res.status(401).json({
             title: 'Login failed', 
