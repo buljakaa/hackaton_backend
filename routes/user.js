@@ -28,7 +28,7 @@ router.post('/register', async (req, res) => {
     await user.save(async (err, result) => {
         console.log(err);
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        // await this.sendEmail(user);
+        //await this.sendEmail(user);
         res.status(201).json({message: 'User created', obj: user});
     });
 });
@@ -38,14 +38,14 @@ exports.sendEmail = async (user) => {
         service: 'gmail',
         auth: {
             user: 'markopriboj@gmail.com',
-            pass: 'rtgaiuisufjwcoga'
+            pass: process.env.MAIL_PASSWORD,
         }
     });
     let mailOptions = {
         from: '<HACKATHON>' + '<' + process.env.MAIL_USERNAME + '>',
         to: user.email,
-        subject: 'Welcome to Hackaton!',
-        html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
+        subject: 'Dobrodosli!',
+        html: '<h1>Na linku ispod potvrdite vas mail!</h1><p></p>'
     };
 
     transporter.sendMail(mailOptions, (error, info) => {

@@ -5,8 +5,7 @@ const logger = require('morgan');
 const db = require('./db');
 
 db.databaseInit();
-const User =require("./model/user");
-const users =require("./routes/user");
+const userRoute = require('./routes/user');
 
 app.use(express.json());
 app.use(logger('dev'));
@@ -19,6 +18,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use("/users",users);
+app.use('/users', userRoute);
 
-module.exports=app;
+module.exports = app;
