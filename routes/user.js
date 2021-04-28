@@ -24,7 +24,7 @@ router.post('/register',async (req, res) => {
             .update(user.username)
             .digest('hex');
     user.verificationToken=verificationToken;
-    user.save((err, result) => {
+    user.save(async(err, result) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
         await this.sendEmail(user);
         res.status(201).json({message: 'User created', obj: user});
@@ -38,20 +38,24 @@ exports.sendEmail = async(user) => {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-        //    user: process.env.MAIL_USERNAME,
-        //   pass: process.env.MAIL_PASSWORD
         user: "markopriboj@gmail.com",
         pass: "rtgaiuisufjwcoga"
         }
       });
-    const userLink="localhost:3000/users/verify?verificationToken="+user.verificationToken;
-      const info = await transporter.sendMail({
-        from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
-        to: user.email, // list of receivers
-        subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
-        text: 'Aktiviraj nalog, link: ' + userLink, // plain text body
-        html: html,
-    });
+      var mailOptions = {
+        from: 'booktadingclub@gmail.com',
+        to: user.email,
+        subject: 'Welcome to book trading club!',
+        html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
+      };
+    // const userLink="localhost:3000/users/verify?verificationToken="+user.verificationToken;
+    //   const info = await transporter.sendMail({
+    //     from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
+    //     to: user.email, // list of receivers
+    //     subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
+    //     text: 'Aktiviraj nalog, link: ' + userLink, // plain text body
+    //     html: html,
+    // });
    
      transporter.sendMail(mailOptions, (error, info) => {
        if (error) console.log(error);
@@ -59,7 +63,7 @@ exports.sendEmail = async(user) => {
      });
 }
 
-router.get('/verify', (req, res) => {
+router.get('/verify',async (req, res) => {
 
     if (!req.params.verificationToken) {
         res.sendStatus(401);
@@ -91,13 +95,13 @@ router.post('/login', (req, res) => {
     
     User.findOne({email: req.body.email}, (err, user) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        //no user with provided email address
+        
         if (!user) return res.status(401).json({
             title: 'Login failed',
             error: {message: 'Invalid email and/or password!'}
         });
-        console.log(user.password);
-        //passwords does not maches
+    
+      
         if (!bcrypt.compare(req.body.password, user.password)) return res.status(401).json({
             title: 'Login failed', 
             error: {message: 'Invalid email and/or password!'}

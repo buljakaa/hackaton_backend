@@ -3,9 +3,7 @@ const app = express();
 const cors = require('cors');
 const logger = require('morgan');
 const db = require('./db');
-
 db.databaseInit();
-const User =require("./model/user");
 const users =require("./routes/user");
 
 app.use(express.json());
