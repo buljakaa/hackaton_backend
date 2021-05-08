@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 require('dotenv').config();
 
@@ -40,61 +40,60 @@ router.post('/registerUser',async (req, res) => {
         lastName: req.body.lastName,
         email: req.body.email,
         username: req.body.username,
-        password:await bcrypt.hash(req.body.password, 10),
+        password: await bcrypt.hash(req.body.password, 10),
         phone: req.body.phone,
-        role: req.body.role,
+        role: 'contestant',
         gender: req.body.gender,
     }); 
 
-        const verificationToken = crypto.createHash('sha256')
-            .update(user.username)
-            .digest('hex');
-    user.verificationToken=verificationToken;
-    user.save(async(err, result) => {
+    const verificationToken = crypto.createHash('sha256')
+        .update(user.username)
+        .digest('hex');
+    user.verificationToken = verificationToken;
+    await user.save(async (err, result) => {
+        console.log(err);
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        await this.sendEmail(user);
-     
+        //await this.sendEmail(user);
         res.status(201).json({message: 'User created', obj: user});
     });
 });
 
-exports.sendEmail = async(user) => {
-    console.log(user.email);
+exports.sendEmail = async (user) => {
     let transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: "markopriboj@gmail.com",
-          pass: "rtgaiuisufjwcoga"
+            user: 'markopriboj@gmail.com',
+            pass: process.env.MAIL_PASSWORD,
         }
-      });
-      let mailOptions = {
-        from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
+    });
+    let mailOptions = {
+        from: '<HACKATHON>' + '<' + process.env.MAIL_USERNAME + '>',
         to: user.email,
-        subject: 'Welcome to Hackaton!',
-        html: '<h1>Greeting message</h1><img src="http://www.off-the-recordmessaging.com/wp-content/uploads/2016/04/Thanks-For-Joining-Us1.jpg" /><p>We hope that you will enjoy in our site, find book that you looking for and sell some books too!</p>'
-       };
-     transporter.sendMail(mailOptions, (error, info) => {
-       if (error) console.log(error);
-       else console.log('Email sent: ' + info.response);
-     });
+        subject: 'Dobrodosli!',
+        html: '<h1>Na linku ispod potvrdite vas mail!</h1><p></p>'
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) console.log(error);
+        else console.log('Email sent: ' + info.response);
+    });
 }
 
-router.get('/verify',async (req, res) => {
-
-    if (!req.params.verificationToken) {
+router.get('/verify', async (req, res) => {
+    if (!req.query.verificationToken) {
         res.sendStatus(401);
         return;
     }
     const verificationToken = req.query.verificationToken;
+
     try {
-        const user =   await User.findOne      ({'verificationToken': verificationToken});
+        const user = await User.findOne({'verificationToken': verificationToken});
         const hostLink = 'http://localhost:5000/auth/email-confirm';
         const errorLink = 'http://localhost:5000/auth/login';
         if (user) {
-            
             user.verified = true;
             user.verificationToken = '';
-            await User.updateOneMethod({'_id': user._id}, user, {$unset: {verificationToken: ''}});
+            await User.findOneAndUpdate({'_id': user._id}, user, {$unset: {verificationToken: ''}});
             res.redirect(hostLink);
         } else {
             res.redirect(errorLink);
@@ -103,31 +102,39 @@ router.get('/verify',async (req, res) => {
         console.log(e);
         res.sendStatus(500);
     }
-
 });
 
-router.post('/login', (req, res) => {
-    
-    User.findOne({email: req.body.email}, (err, user) => {
-        if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        //no user with provided email address
+router.post('/login', async (req, res) => {
+    if (!req.body.username || !req.body.password) {
+        res.sendStatus(401);
+        return;
+    }
+    const username = req.body.username;
+    const password = req.body.password;
+    try {
+        const user = await User.findOne({username: username}).select('+password');
         if (!user) return res.status(401).json({
             title: 'Login failed',
-            error: {message: 'Invalid email and/or password!'}
+            error: {message: 'Invalid username and/or password!'}
         });
-        console.log(user.password);
-     
-        if (!bcrypt.compare(req.body.password, user.password)) return res.status(401).json({
-            title: 'Login failed', 
-            error: {message: 'Invalid email and/or password!'}
-        });
+        bcrypt.compare(req.body.password, user.password, async (err, data) => {
+            console.log(err);
+            if (err)
+                return res.status(401).json({
+                    title: 'Login failed',
+                    error: {message: 'Invalid email and/or password!'}
+                });
 
-        const token = jwt.sign({user: user}, 'secret', {expiresIn: 10800});
-        user.token=token;
-        user.save();
-        res.status(200).json({message: 'Successfully logged in', token: token, userId: user._id});
-    }).select("+password");
+            const token = jwt.sign({username: user.username}, 'secret', {expiresIn: 10800});
+            user.token = token;
+            await User.findOneAndUpdate({'username': username});
+            res.status(200).json({message: 'Successfully logged in', token: token, userId: user._id});
+        });
+    } catch
+        (e) {
+        console.log(e);
+        res.sendStatus(500);
+    }
 });
 
 module.exports = router;
- 
