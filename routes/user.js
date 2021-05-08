@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 require('dotenv').config();
-
+ 
 const router = express.Router();
 
 const User = require('../model/user');
@@ -144,7 +144,7 @@ router.post('/logout',async (req, res) => {
      
     const user = await User.findOne({username: req.body.username});
     user.token="";
-    user.save();
+    await User.findOneAndUpdate({'_id': user._id}, user, );
     res.status(201).json({message: 'User successfully logout'});
 });
 
