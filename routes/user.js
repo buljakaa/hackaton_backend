@@ -9,8 +9,7 @@ const router = express.Router();
 
 const User = require('../model/user');
 
-router.post('/register',async (req, res) => {
-
+router.post('/registerTeam',async (req, res) => {
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -21,8 +20,31 @@ router.post('/register',async (req, res) => {
         role: req.body.role,
         gender: req.body.gender,
     }); 
- 
-    console.log(user);
+
+        const verificationToken = crypto.createHash('sha256')
+            .update(user.username)
+            .digest('hex');
+    user.verificationToken=verificationToken;
+    user.save(async(err, result) => {
+        if (err) return res.status(500).json({title: 'An error occurred', error: err});
+        await this.sendEmail(user);
+     
+        res.status(201).json({message: 'User created', obj: user});
+    });
+});
+
+
+router.post('/registerUser',async (req, res) => {
+    let user = new User({
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        username: req.body.username,
+        password:await bcrypt.hash(req.body.password, 10),
+        phone: req.body.phone,
+        role: req.body.role,
+        gender: req.body.gender,
+    }); 
 
         const verificationToken = crypto.createHash('sha256')
             .update(user.username)
@@ -37,7 +59,6 @@ router.post('/register',async (req, res) => {
 });
 
 exports.sendEmail = async(user) => {
-
     console.log(user.email);
     let transporter = nodemailer.createTransport({
         service: 'gmail',
