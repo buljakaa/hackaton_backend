@@ -8,35 +8,44 @@ require('dotenv').config();
 const router = express.Router();
 
 const User = require('../model/user');
+const Team = require('../model/team');
 const { getUnpackedSettings } = require('http2');
 
-// router.post('/registerTeam',async (req, res) => {
-//     let user = new User({
-//         firstName: req.body.firstName,
-//         lastName: req.body.lastName,
-//         email: req.body.email,
-//         username: req.body.username,
-//         password:await bcrypt.hash(req.body.password, 10),
-//         phone: req.body.phone,
-//         role: req.body.role,
-//         gender: req.body.gender,
-//     }); 
-
-//     console.log(user);
-//         const verificationToken = crypto.createHash('sha256')
-//             .update(user.username)
-//             .digest('hex');
-//     user.verificationToken=verificationToken;
-//     user.save(async(err, result) => {
-//         if (err) return res.status(500).json({title: 'An error occurred', error: err});
-//         await this.sendEmail(user);
-//         res.status(201).json({message: 'User created', obj: user});
-//     });
-// });
+router.post('/registerTeam',async (req, res) => {
+    let user = new User({
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        email: req.body.email,
+        username: req.body.username,
+        password:await bcrypt.hash(req.body.password, 10),
+        phone: req.body.phone,
+        role: req.body.role,
+        gender: req.body.gender,
+    }); 
+    const verificationToken = crypto.createHash('sha256')
+    .update(user.username)
+    .digest('hex');
+    user.verificationToken = verificationToken;
+    await user.save(async(err, result) => {
+        if (err) return res.status(500).json({title: 'An error occurred', error: err});
+        const user1 = await User.findOne ({'username': req.body.username});
+        await this.sendEmail(user);
+        let team = new Team({
+            name: req.body.name,
+            abbreviation: req.body.abbreviation,
+            teamLeader:user1._id,
+            code:"as12$"
+        }); 
+           team.save(async(err, result) => {
+            if (err) return res.status(500).json({title: 'An error occurred', error: err});
+            res.status(201).json({message: 'Team created', obj: team});
+           });
+    });
+});
 
     
-
 router.post('/registerUser',async (req, res) => {
+
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -54,7 +63,12 @@ router.post('/registerUser',async (req, res) => {
     user.verificationToken = verificationToken;
     await user.save(async (err, result) => {
       
-        if (err) return res.status(500).json({title: 'An error occurred', error: err});
+        if (err) return res.status(500).json({title: 'aaaa', error: err});
+        if(req.body.code){
+            const team = await Team.findOne ({'code': req.body.code});
+            team.teamMembers.push(user._id);
+            await Team.findOneAndUpdate({'_id': team._id}, team, );
+        }
         await this.sendEmail(user);
         res.status(201).json({message: 'User created', obj: user});
     });
