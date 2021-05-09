@@ -76,8 +76,8 @@ router.post('/registerUser',async (req, res) => {
 
 exports.sendEmail = async(user) => {
 
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
+    let transporter = nodemailer.createTransport({ 
+        service: 'gmail',  
         auth: {
         user: "markopoppriboj@gmail.com",
         pass: "rtgaiuisufjwcoga"
