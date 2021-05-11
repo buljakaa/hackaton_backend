@@ -11,7 +11,9 @@ const User = require('../model/user');
 const Team = require('../model/team');
 const { getUnpackedSettings } = require('http2');
 
-router.post('/registerTeam',async (req, res) => {
+exports.registerTeam = async(req,res) => {
+    console.log("usp");
+//router.post('/registerTeam',async (req, res) => {
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -41,10 +43,12 @@ router.post('/registerTeam',async (req, res) => {
             res.status(201).json({message: 'Team created', obj: team});
            });
     });
-});
+//}
+//)
+};
 
-    
-router.post('/registerUser',async (req, res) => {
+exports.registerUser = async(req,res) => { 
+
 
     let user = new User({
         firstName: req.body.firstName,
@@ -72,7 +76,8 @@ router.post('/registerUser',async (req, res) => {
         await this.sendEmail(user);
         res.status(201).json({message: 'User created', obj: user});
     });
-});
+
+};
 
 exports.sendEmail = async(user) => {
 
@@ -84,7 +89,7 @@ exports.sendEmail = async(user) => {
         }
       });
    
-     const userLink="http://localhost:3000/users/verify?verificationToken="+user.verificationToken;
+     const userLink="http://localhost:3000/auth-user/verify?verificationToken="+user.verificationToken;
       const info = await transporter.sendMail({
         from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
         to: user.email, // list of receivers
@@ -93,7 +98,8 @@ exports.sendEmail = async(user) => {
     });
 }
 
-router.get('/verify', async (req, res) => {
+exports.verify = async(req,res) => {
+
     if (!req.query.verificationToken) {
         res.sendStatus(401);
         return;
@@ -117,9 +123,9 @@ router.get('/verify', async (req, res) => {
         console.log(e);
         res.sendStatus(500);
     }
-});
+};
+exports.login = async (req, res) => {
 
-router.post('/login', async (req, res) => {
     if (!req.body.username || !req.body.password) {
         res.sendStatus(401);
         return;
@@ -152,14 +158,20 @@ router.post('/login', async (req, res) => {
         console.log(e);
         res.sendStatus(500);
     }
-});
+};
 
-router.post('/logout',async (req, res) => {
-     
-    const user = await User.findOne({username: req.body.username});
-    user.token="";
-    await User.findOneAndUpdate({'_id': user._id}, user, );
-    res.status(201).json({message: 'User successfully logout'});
-});
 
-module.exports = router;
+
+    
+exports.logout = async(req,res) => {
+    try {
+        const user = await User.findOne({username: req.body.username});
+        user.token="";
+        await User.findOneAndUpdate({'_id': user._id}, user, );
+        res.status(201).json({message: 'User successfully logout'});
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+

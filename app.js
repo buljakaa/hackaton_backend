@@ -5,8 +5,9 @@ const logger = require('morgan');
 const db = require('./db');
 db.databaseInit();
 
+const authRoute = require('./routes/auth-router');
+const crudRoute = require('./routes/crud-router');
 
-const userRoute = require('./routes/user');
 
 app.use(express.json());
 app.use(logger('dev'));
@@ -19,6 +20,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/users', userRoute);
-
+app.use('/auth-user', authRoute);
+app.use('/crud-user', crudRoute);
 module.exports = app;
