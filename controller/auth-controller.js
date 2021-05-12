@@ -11,9 +11,12 @@ const User = require('../model/user');
 const Team = require('../model/team');
 const { getUnpackedSettings } = require('http2');
 
+
 exports.registerTeam = async(req,res) => {
-    console.log("usp");
-//router.post('/registerTeam',async (req, res) => {
+   
+    
+    
+    
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -32,20 +35,34 @@ exports.registerTeam = async(req,res) => {
         if (err) return res.status(500).json({title: 'An error occurred', error: err});
         const user1 = await User.findOne ({'username': req.body.username});
         await this.sendEmail(user);
+        let codeConst="";
+        await this.makeid(5).then(codePromise=>codeConst=codePromise);
         let team = new Team({
             name: req.body.name,
             abbreviation: req.body.abbreviation,
             teamLeader:user1._id,
-            code:"as12$"
+            code:codeConst
+            
         }); 
            team.save(async(err, result) => {
             if (err) return res.status(500).json({title: 'An error occurred', error: err});
-            res.status(201).json({message: 'Team created', obj: team});
+            res.status(201).json({message: 'Team created', obj: codeConst});
            });
     });
-//}
-//)
+    
 };
+
+exports.makeid =async(length)=>{
+
+    var result           = [];
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%^&*';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+      result.push(characters.charAt(Math.floor(Math.random() * 
+ charactersLength)));
+   }
+   return result.join('');
+}
 
 exports.registerUser = async(req,res) => { 
 
@@ -159,10 +176,7 @@ exports.login = async (req, res) => {
         res.sendStatus(500);
     }
 };
-
-
-
-    
+  
 exports.logout = async(req,res) => {
     try {
         const user = await User.findOne({username: req.body.username});
