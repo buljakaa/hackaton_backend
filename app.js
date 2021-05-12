@@ -20,6 +20,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/auth-user', authRoute);
-app.use('/crud-user', crudRoute);
+app.use('/auth', authRoute);
+app.use('/user', crudRoute);
 module.exports = app;
