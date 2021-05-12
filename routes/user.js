@@ -9,7 +9,6 @@ const router = express.Router();
 
 const User = require('../model/user');
 const Team = require('../model/team');
-const { getUnpackedSettings } = require('http2');
 
 router.post('/registerTeam',async (req, res) => {
     let user = new User({
@@ -64,7 +63,7 @@ router.post('/registerUser',async (req, res) => {
     await user.save(async (err, result) => {
       
         if (err) return res.status(500).json({title: 'aaaa', error: err});
-        if(req.body.code){
+        if (req.body.code) {
             const team = await Team.findOne ({'code': req.body.code});
             team.teamMembers.push(user._id);
             await Team.findOneAndUpdate({'_id': team._id}, team, );
