@@ -23,3 +23,4 @@ app.use((req, res, next) => {
 app.use('/auth', authRoute);
 app.use('/user', userRoute);
 module.exports = app;
+   
