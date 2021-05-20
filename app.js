@@ -6,7 +6,7 @@ const db = require('./db');
 db.databaseInit();
 
 const authRoute = require('./routes/auth-router');
-const crudRoute = require('./routes/crud-router');
+const userRoute = require('./routes/user-router');
 
 
 app.use(express.json());
@@ -20,6 +20,6 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/auth-user', authRoute);
-app.use('/crud-user', crudRoute);
+app.use('/auth', authRoute);
+app.use('/user', userRoute);
 module.exports = app;

@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+
 const crypto = require('crypto');
 require('dotenv').config();
  
@@ -9,14 +9,13 @@ const router = express.Router();
 
 const User = require('../model/user');
 const Team = require('../model/team');
+
+const UserController = require('./user-controller');
+
 const { getUnpackedSettings } = require('http2');
 
 
 exports.registerTeam = async(req,res) => {
-   
-    
-    
-    
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -30,43 +29,12 @@ exports.registerTeam = async(req,res) => {
     const verificationToken = crypto.createHash('sha256')
     .update(user.username)
     .digest('hex');
-    user.verificationToken = verificationToken;
-    await user.save(async(err, result) => {
-        if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        const user1 = await User.findOne ({'username': req.body.username});
-        await this.sendEmail(user);
-        let codeConst="";
-        await this.makeid(5).then(codePromise=>codeConst=codePromise);
-        let team = new Team({
-            name: req.body.name,
-            abbreviation: req.body.abbreviation,
-            teamLeader:user1._id,
-            code:codeConst
-            
-        }); 
-           team.save(async(err, result) => {
-            if (err) return res.status(500).json({title: 'An error occurred', error: err});
-            res.status(201).json({message: 'Team created', obj: codeConst});
-           });
-    });
-    
+    user.verificationToken = verificationToken; 
+    UserController.saveLeader(user,res,req);
 };
 
-exports.makeid =async(length)=>{
-
-    var result           = [];
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%^&*';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
-      result.push(characters.charAt(Math.floor(Math.random() * 
- charactersLength)));
-   }
-   return result.join('');
-}
 
 exports.registerUser = async(req,res) => { 
-
-
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -82,38 +50,9 @@ exports.registerUser = async(req,res) => {
         .update(user.username)
         .digest('hex');
     user.verificationToken = verificationToken;
-    await user.save(async (err, result) => {
-      
-        if (err) return res.status(500).json({title: 'aaaa', error: err});
-        if(req.body.code){
-            const team = await Team.findOne ({'code': req.body.code});
-            team.teamMembers.push(user._id);
-            await Team.findOneAndUpdate({'_id': team._id}, team, );
-        }
-        await this.sendEmail(user);
-        res.status(201).json({message: 'User created', obj: user});
-    });
+    UserController.saveMember(user,res,req);
 
 };
-
-exports.sendEmail = async(user) => {
-
-    let transporter = nodemailer.createTransport({ 
-        service: 'gmail',  
-        auth: {
-        user: "markopoppriboj@gmail.com",
-        pass: "rtgaiuisufjwcoga"
-        }
-      });
-   
-     const userLink="http://localhost:3000/auth-user/verify?verificationToken="+user.verificationToken;
-      const info = await transporter.sendMail({
-        from: "<HACKATHON>" + '<' + process.env.MAIL_USERNAME + '>',
-        to: user.email, // list of receivers
-        subject: '[DIERS] Aktivirajte Vaš nalog', // Subject line
-        html: 'Please click <a href="' + userLink + '"> here </a> to activate your account.'
-    });
-}
 
 exports.verify = async(req,res) => {
 
@@ -141,8 +80,8 @@ exports.verify = async(req,res) => {
         res.sendStatus(500);
     }
 };
-exports.login = async (req, res) => {
 
+exports.login = async (req, res) => {
     if (!req.body.username || !req.body.password) {
         res.sendStatus(401);
         return;
