@@ -80,7 +80,7 @@ exports.profile = async (req, res) => {
     }
     const username = req.query.username;
     try {
-        const user = await User.findOne({username: username})
+        const user = await User.findOne({username: username});
         res.status(200).json(user);
     } catch (err) {
         console.log('[REQUEST-ERROR]: ', err);

@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../model/user');
-const Team = require('../model/team');
 const UserController = require('./user-controller');
 
 
@@ -74,6 +73,7 @@ exports.verify = async (req, res) => {
     }
 };
 
+// Ako je rememberMe setovano na true onda stavi da token expiruje za 730h inace 30m
 exports.login = async (req, res) => {
     if (!req.body.username || !req.body.password) {
         res.sendStatus(401);
@@ -81,6 +81,7 @@ exports.login = async (req, res) => {
     }
     const username = req.body.username;
     const password = req.body.password;
+    const rememberMe = req.body.rememberMe;
     try {
         const user = await User.findOne({username: username}).select('+password');
         if (!user) return res.status(401).json({
@@ -101,8 +102,7 @@ exports.login = async (req, res) => {
 
             res.status(200).json({message: 'Successfully logged in', token: token, username: user.username});
         });
-    } catch
-        (e) {
+    } catch (e) {
         console.log(e);
         res.sendStatus(500);
     }
@@ -116,7 +116,7 @@ exports.logout = async (req, res) => {
         res.status(201).json({message: 'User successfully logout'});
     } catch (err) {
         console.log('[METHOD-ERROR]: ', err);
-        throw new Error(err);
+        res.sendStatus(500);
     }
 };
 
