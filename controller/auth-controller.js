@@ -47,6 +47,7 @@ exports.registerUser = async (req, res) => {
 
 };
 
+// ovo prebacite u mail-controller
 exports.verify = async (req, res) => {
     if (!req.query.verificationToken) {
         res.sendStatus(401);
