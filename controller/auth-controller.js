@@ -34,7 +34,7 @@ exports.registerUser = async (req, res) => {
         username: req.body.username,
         password: await bcrypt.hash(req.body.password, 10),
         phone: req.body.phone,
-        role: req.body.role,
+        role: 'contestant',
         gender: req.body.gender,
     });
 
