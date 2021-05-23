@@ -8,7 +8,7 @@ db.databaseInit();
 const authRoute = require('./routes/auth-router');
 const userRoute = require('./routes/user-router');
 
-
+   
 app.use(express.json());
 app.use(logger('dev'));
 app.use(cors());
