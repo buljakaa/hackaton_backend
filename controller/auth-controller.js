@@ -52,6 +52,7 @@ exports.registerUser = async(req,res) => {
     user.verificationToken = verificationToken;
     UserController.saveMember(user,res,req);
 
+
 };
 
 exports.verify = async(req,res) => {
