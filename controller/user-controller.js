@@ -1,44 +1,28 @@
 const User = require('../model/user');
 const Team = require('../model/team');
-const nodemailer = require('nodemailer');
+
 const teamController = require('./team-controller');
+const mailController = require('./mail-controller');
 
-// I morate napraviti metodu koja ce biti pozvana od strane rute, a ta metoda da poziva odvojenu metodu koja prima samo te parametere
-// kao updateUser i updateUserMethod
 
-// Morate da se odlucite da li cete ovako sa callback i da koristite .catch i .then na metodu ili cete sa try-catch blokovima da radite
-exports.saveLeader = async (user, res, req) => {
-    await user.save(async (err) => {
-        if (err) return res.status(500).json({title: 'An error occurred', error: err});
-        const user1 = await User.findOne({'username': user.username});
-        await this.sendEmail(user);
-        let codeConst = '';
-        await this.makeid(5).then(codePromise => codeConst = codePromise);
-        let team = new Team({
-            name: req.body.name,
-            abbreviation: req.body.abbreviation,
-            teamLeader: user1._id,
-            code: codeConst
-        });
-        await teamController.save(team, res, codeConst);
+exports.saveLeader = async (query) => {
+
+    let user=query.user;
+    user=await User.create(user);
+    await mailController.sendEmail(query.user);
+    let codeConst = '';
+    await this.makeid(5).then(codePromise => codeConst = codePromise);
+    let team = new Team({
+        name: query.name,
+        abbreviation: query.abbreviation,
+        teamLeader: user._id,
+        code: codeConst
     });
+    await teamController.save(team);
+    return codeConst;
+
 }
 
-// Morate da se odlucite da li cete ovako sa callback i da koristite .catch i .then na metodu ili cete sa try-catch blokovima da radite
-exports.saveMember = async (user, res, req) => {
-    await user.save(async (err) => {
-        if (err) return res.status(500).json({title: 'aaaa', error: err});
-        if (req.body.code) {
-            const team = await Team.findOne({'code': req.body.code});
-            team.teamMembers.push(user._id);
-            await Team.findOneAndUpdate({'_id': team._id}, team,);
-        }
-        await this.sendEmail(user);
-        res.status(201).json({message: 'User created', obj: user});
-    });
-}
-
-// UVEK KORISTI SAMO CONST ILI LET NIKAD 'LET'
 exports.makeid = async (length) => {
     const result = [];
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$%^&*';
@@ -51,52 +35,28 @@ exports.makeid = async (length) => {
 }
 
 
-// ovo prebacite u mail-controller.js
-exports.sendEmail = async (user) => {
-    // ovde dodaj .env varijable koje trebaju za user i pass i ovaj transporter treba u poseban metod da mozes da ga pozivas svaki put kad ti treba
-    // posaljes mail
-    let transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'markopoppriboj@gmail.com',
-            pass: 'rtgaiuisufjwcoga'
+exports.saveMember = async (user, res, req) => {
+    await user.save(async (err) => {
+        if (err) return res.status(500).json({title: 'aaaa', error: err});
+        if (req.body.code) {
+            const team = await Team.findOne({'code': req.body.code});
+            team.teamMembers.push(user._id);
+            await Team.findOneAndUpdate({'_id': team._id}, team,);
         }
-    });
-
-    const userLink = 'http://localhost:3000/auth-user/verify?verificationToken=' + user.verificationToken;
-    const info = await transporter.sendMail({
-        from: '<HACKATHON>' + '<' + process.env.MAIL_USERNAME + '>',
-        to: user.email, // list of receivers
-        subject: '[HACKATHON] Aktivirajte Vaš nalog', // Subject line
-        html: 'Please click <a href="' + userLink + '"> here </a> to activate your account.'
+        await mailController.sendEmail(user);
+        res.status(201).json({message: 'User created', obj: user});
     });
 }
 
-// Ne treba svugde da proveravas BODY posebno ako je GET koji nema req.body!
-exports.profile = async (req, res) => {
-    if (!req.query) {
+exports.updateOne = async (req, res) => {
+    if (!req.body || !req.params) {
         res.sendStatus(400);
         return;
     }
-    const username = req.query.username;
-    try {
-        const user = await User.findOne({username: username});
-        res.status(200).json(user);
-    } catch (err) {
-        console.log('[REQUEST-ERROR]: ', err);
-        res.sendStatus(500);
-    }
-};
 
-exports.updateUser = async (req, res) => {
-    if (!req.body || !req.query) {
-        res.sendStatus(400);
-        return;
-    }
-    // Ovako da izgleda kad se uzimaju TIP i VREDNOST, ako treba iz params onda ce biti req.params.type i req.params.value
     const updatingData = req.body;
-    const type = req.query.type;
-    const value = req.query.value;
+    const type = req.params.type;
+    const value = req.params.value;
     let query = {};
     query[type] = value;
     try {
@@ -112,6 +72,166 @@ exports.updateOneMethod = async (query, updatingData) => {
     try {
         const updatedData = await User.findOneAndUpdate(query, updatingData);
         return updatedData;
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+
+//////////////
+
+exports.profile = async (req, res) => {
+    if (!req.query) {
+        res.sendStatus(400);
+        return;
+    }
+    const username = req.query.username;
+    try {
+        const user = await User.findOne({username: username});
+        res.status(200).json(user);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+
+exports.updateMany = async (req, res) => {
+    if (!req.body || !req.params.type || !req.params.value) {
+        res.sendStatus(400);
+        return;
+    }
+    const updatingData = req.body;
+    const type = req.params.type;
+    const value = req.params.value;
+    let query = {};
+    query[type] = value;
+    try {
+        const data = await this.updateManyMethod(query, updatingData);
+        res.status(200).json(data);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+exports.updateManyMethod = async (query, updatingData) => {
+    try {
+        const updatedData = await User.updateMany(query, updatingData);
+        return updatedData;
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+
+exports.deleteOne = async (req, res) => {
+    if (!req.params.type || !req.params.value) {
+        res.sendStatus(400);
+        return;
+    }
+    const type = req.params.type;
+    const value = req.params.value;
+    let query = {};
+    query[type] = value;
+    try {
+        const data = await this.deleteOneMethod(query);
+        res.status(200).json(data);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+exports.deleteOneMethod = async (query) => {
+    try {
+        const deletedData = await User.findOneAndDelete(query);
+        return deletedData;
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+
+//JANJE
+exports.deleteMany = async (req, res) => {
+    if (!req.params.type || !req.params.value) {
+        res.sendStatus(400);
+        return;
+    }
+    const type = req.params.type;
+    const value = req.params.value;
+    console.log(type);
+    console.log(value);
+    let query = {};
+    query[type] = value;
+    try {
+        const data = await this.deleteManyMethod(query);
+        console.log(data);
+        res.status(200).json(data);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+exports.deleteManyMethod = async (query) => {
+    try {
+        const deletedData = await User.deleteMany(query);
+        return deletedData;
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+
+
+exports.readOne = async (req, res) => {
+    let query = {};
+    if (req.params.type && req.params.value) {
+        const type = req.params.type;
+        const value = req.params.value;
+        query[type] = value;
+    }
+    try {
+        const data = await this.readOneMethod(query);
+        res.status(200).json(data);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+exports.readOneMethod = async (query, options = {}) => {
+    try {
+        const foundData = await User.findOne(query).select(options);
+        return foundData;
+    } catch (err) {
+        console.log('[METHOD-ERROR]: ', err);
+        throw new Error(err);
+    }
+};
+
+exports.readMany = async (req, res) => {
+    let query = {};
+    if (req.params.type && req.params.value) {
+        const type = req.params.type;
+        const value = req.params.value;
+        query[type] = value;
+    }
+    try {
+        const data = await this.readManyMethod(query);
+        res.status(200).json(data);
+    } catch (err) {
+        console.log('[REQUEST-ERROR]: ', err);
+        res.sendStatus(500);
+    }
+};
+
+exports.readManyMethod = async (query) => {
+    try {
+        const foundData = await User.find(query);
+        return foundData;
     } catch (err) {
         console.log('[METHOD-ERROR]: ', err);
         throw new Error(err);

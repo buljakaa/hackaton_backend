@@ -7,6 +7,12 @@ const UserController = require('./user-controller');
 
 
 exports.registerTeam = async (req, res) => {
+
+    if (!req.body || !req.query) {
+        res.sendStatus(400);
+        return;
+    }
+
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -22,11 +28,19 @@ exports.registerTeam = async (req, res) => {
         .update(user.username)
         .digest('hex');
     user.verificationToken = verificationToken;
-    await UserController.saveLeader(user, res, req);
+    let code='';
+    await UserController.saveLeader({"user":user,"name":req.body.name,"abbreviation":req.body.abbreviation}).then(rezultat=>code=rezultat);
+    res.status(201).json({message: 'Team created', code: code});
 };
 
 
 exports.registerUser = async (req, res) => {
+
+    if (!req.body) {
+        res.sendStatus(400);
+        return;
+    }
+
     let user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
@@ -110,6 +124,10 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
+    if (!req.body) {
+        res.sendStatus(400);
+        return;
+    }
     try {
         const user = await User.findOne({username: req.body.username});
         user.token = '';
