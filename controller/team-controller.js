@@ -1,10 +1,10 @@
 const Team = require('../model/team');
 
+// ovaj tuzni .save() popravite majku mu i koriste ga u user controlleru
 
 exports.save = async (team) => {
     team.save();
 };
-
 
 exports.deleteOne = async (req, res) => {
     if (!req.params.type || !req.params.value) {
@@ -65,20 +65,14 @@ exports.deleteManyMethod = async (query) => {
     }
 };
 
-
 exports.updateOne = async (req, res) => {
-    console.log("uso");
     if (!req.body || !req.params) {
-        console.log("uso");
         res.sendStatus(400);
         return;
     }
-
     const updatingData = req.body;
     const type = req.params.type;
     const value = req.params.value;
-    console.log(type);
-    console.log(value);
     let query = {};
     query[type] = value;
     try {
@@ -146,9 +140,9 @@ exports.readOne = async (req, res) => {
     }
 };
 
-exports.readOneMethod = async (query, options = {}) => {
+exports.readOneMethod = async (query) => {
     try {
-        const foundData = await Team.findOne(query).select(options);
+        const foundData = await Team.findOne(query);
         return foundData;
     } catch (err) {
         console.log('[METHOD-ERROR]: ', err);
