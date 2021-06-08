@@ -44,14 +44,14 @@ exports.registerGoogle = async (req, res) => {
 };
 
 
+
 exports.registerTeam = async (req, res) => {
  
     if (!req.body || !req.query) {
         res.sendStatus(400);
         return;
     }
-
-    let user = new User({
+    const user = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
@@ -60,26 +60,34 @@ exports.registerTeam = async (req, res) => {
         phone: req.body.phone,
         role: 'contestant',
         gender: req.body.gender,
-    });
-
-    const verificationToken = crypto.createHash('sha256')
-        .update(user.username)
-        .digest('hex');
-    user.verificationToken = verificationToken;
-    let code='';
-    await UserController.saveLeader({"user":user,"name":req.body.name,"abbreviation":req.body.abbreviation}).then(rezultat=>code=rezultat);
-    res.status(201).json({message: 'Team created', code: code});
+    };
+    const team = {
+        name: req.body.name,
+        abbreviation: req.body.abbreviation,
+    }
+    try {
+        const verificationToken = crypto.createHash('sha256')
+            .update(user.username)
+            .digest('hex');
+        user.verificationToken = verificationToken;
+        const teamCode = await UserController.saveLeader(user, team);
+        res.status(201).json({message: 'Team created', code: teamCode});
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
 };
 
-
 exports.registerUser = async (req, res) => {
-
     if (!req.body) {
         res.sendStatus(400);
         return;
     }
-
-    let user = new User({
+    let code = undefined;
+    if (req.body.code) {
+        code = req.body.code;
+    }
+    let user = {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
@@ -88,14 +96,18 @@ exports.registerUser = async (req, res) => {
         phone: req.body.phone,
         role: 'contestant',
         gender: req.body.gender,
-    });
-
+    };
     const verificationToken = crypto.createHash('sha256')
         .update(user.username)
         .digest('hex');
     user.verificationToken = verificationToken;
-    await UserController.saveMember(user, res, req);
-
+    try {
+        user = await UserController.saveMember(user, code);
+        res.status(200).json(user);
+    } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+    }
 
 };
 
@@ -115,7 +127,6 @@ exports.verify = async (req, res) => {
             user.verified = true;
             user.verificationToken = '';
             await User.findOneAndUpdate({'_id': user._id}, user, {$unset: {verificationToken: ''}});
-
             res.redirect(hostLink);
         } else {
             res.redirect(errorLink);
@@ -134,6 +145,10 @@ exports.login = async (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
     const rememberMe = req.body.rememberMe;
+    let expiresIn = '30m';
+    if  (rememberMe) {
+        expiresIn = '730h';
+    }
     try {
         const user = await User.findOne({username: username}).select('+password');
         if (!user) return res.status(401).json({
@@ -148,9 +163,9 @@ exports.login = async (req, res) => {
                     error: {message: 'Invalid email and/or password!'}
                 });
 
-            const token = jwt.sign({username: user.username}, 'secret', {expiresIn: 10800});
+            const token = jwt.sign({username: user.username}, 'secret', {expiresIn: expiresIn});
             user.token = token;
-            await User.findOneAndUpdate({'_id': user._id}, user,);
+            await User.findOneAndUpdate({'_id': user._id}, user);
 
             res.status(200).json({message: 'Successfully logged in', token: token, username: user.username});
         });
