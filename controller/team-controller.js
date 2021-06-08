@@ -41,13 +41,10 @@ exports.deleteMany = async (req, res) => {
     }
     const type = req.params.type;
     const value = req.params.value;
-    console.log(type);
-    console.log(value);
     let query = {};
     query[type] = value;
     try {
         const data = await this.deleteManyMethod(query);
-        console.log(data);
         res.status(200).json(data);
     } catch (err) {
         console.log('[REQUEST-ERROR]: ', err);
@@ -67,9 +64,8 @@ exports.deleteManyMethod = async (query) => {
 
 
 exports.updateOne = async (req, res) => {
-    console.log("uso");
+
     if (!req.body || !req.params) {
-        console.log("uso");
         res.sendStatus(400);
         return;
     }
@@ -77,8 +73,7 @@ exports.updateOne = async (req, res) => {
     const updatingData = req.body;
     const type = req.params.type;
     const value = req.params.value;
-    console.log(type);
-    console.log(value);
+
     let query = {};
     query[type] = value;
     try {

@@ -78,7 +78,6 @@ exports.updateOneMethod = async (query, updatingData) => {
     }
 };
 
-//////////////
 
 exports.profile = async (req, res) => {
     if (!req.query) {
@@ -118,6 +117,8 @@ exports.updateMany = async (req, res) => {
 exports.updateManyMethod = async (query, updatingData) => {
     try {
         const updatedData = await User.updateMany(query, updatingData);
+
+        
         return updatedData;
     } catch (err) {
         console.log('[METHOD-ERROR]: ', err);

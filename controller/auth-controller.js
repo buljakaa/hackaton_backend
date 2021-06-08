@@ -4,10 +4,48 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../model/user');
 const UserController = require('./user-controller');
+const {OAuth2Client} = require('google-auth-library')
+const client = new OAuth2Client(process.env.CLIENT_ID);
+
+
+exports.gitId = async (req, res) => {
+console.log(req)
+}
+
+exports.registerGoogle = async (req, res) => {
+    try{
+
+    const  token1   = req.body;
+    
+    const ticket = await client.verifyIdToken({
+       idToken: token1,
+       audience:process.env.CLIENT_ID
+     });
+ 
+   const { name, email, picture } = ticket.getPayload();    
+
+   const user = await db.user.upsert({ 
+       where: { email: email },
+       update: { name, picture },
+       create: { name, email, picture }
+   })
+
+    const query = { email: email };
+    const update = { $set: { name: name }};
+    const options = { upsert: true };
+    User.updateOne(query, update, options);
+
+    res.status(201)
+    res.json(user)
+   }catch (e) {
+      console.log(e);
+      res.sendStatus(500);
+   }    
+};
 
 
 exports.registerTeam = async (req, res) => {
-
+ 
     if (!req.body || !req.query) {
         res.sendStatus(400);
         return;
@@ -61,7 +99,7 @@ exports.registerUser = async (req, res) => {
 
 };
 
-// ovo prebacite u mail-controller
+
 exports.verify = async (req, res) => {
     if (!req.query.verificationToken) {
         res.sendStatus(401);
@@ -88,7 +126,6 @@ exports.verify = async (req, res) => {
     }
 };
 
-// Ako je rememberMe setovano na true onda stavi da token expiruje za 730h inace 30m
 exports.login = async (req, res) => {
     if (!req.body.username || !req.body.password) {
         res.sendStatus(401);
